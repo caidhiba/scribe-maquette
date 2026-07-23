@@ -1,0 +1,6 @@
+# Backend Python
+scribe-backend/__pycache__/
+scribe-backend/*.pyc
+scribe-backend/.env
+scribe-backend/.venv
+scribe-backend/env/
