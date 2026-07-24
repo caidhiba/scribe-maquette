@@ -4,3 +4,4 @@ scribe-backend/*.pyc
 scribe-backend/.env
 scribe-backend/.venv
 scribe-backend/env/
+scribe-backend/
