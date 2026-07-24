@@ -1,26 +1,30 @@
+// 
+
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Mic, Pause, Play, Square, Loader2, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { Mic, Pause, Play, Square, Loader2, ArrowRight, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react'
 import { formatClock } from '@/lib/mock-data'
 
-type Phase = 'idle' | 'recording' | 'paused' | 'processing' | 'done'
+// URL du Webhook n8n
+const N8N_WEBHOOK_URL = 'https://dcbd4caef49cdb.lhr.lifea7c353'
 
-const mockTranscript = [
-  { speaker: 'Speaker 1', text: "Let's start divergent — no bad ideas for the next ten minutes on the onboarding flow." },
-  { speaker: 'Speaker 2', text: 'What if we hide advanced settings entirely until the user hits a real need?' },
-  { speaker: 'Speaker 3', text: 'Progressive setup — I like it. It matches how people actually ramp up.' },
-]
+type Phase = 'idle' | 'recording' | 'paused' | 'processing' | 'done' | 'error'
 
 export function DictaphoneRecorder({ title, onBack }: { title: string; onBack: () => void }) {
   const [phase, setPhase] = useState<Phase>('idle')
   const [seconds, setSeconds] = useState(0)
-  const [revealed, setRevealed] = useState(0)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  
+  // Références pour la gestion de l'audio et du timer
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
 
+  // Compteur de temps d'enregistrement
   useEffect(() => {
     if (phase === 'recording') {
       timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000)
@@ -32,19 +36,87 @@ export function DictaphoneRecorder({ title, onBack }: { title: string; onBack: (
     }
   }, [phase])
 
-  // Simulate transcription after processing
-  useEffect(() => {
-    if (phase !== 'processing') return
-    const t = setTimeout(() => setPhase('done'), 2200)
-    return () => clearTimeout(t)
-  }, [phase])
+  // Lancer l'enregistrement du micro
+  const startRecording = async () => {
+    try {
+      setErrorMessage(null)
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream)
+      mediaRecorderRef.current = mediaRecorder
+      audioChunksRef.current = []
 
-  useEffect(() => {
-    if (phase !== 'done') return
-    if (revealed >= mockTranscript.length) return
-    const t = setTimeout(() => setRevealed((r) => r + 1), 500)
-    return () => clearTimeout(t)
-  }, [phase, revealed])
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data)
+        }
+      }
+
+      mediaRecorder.start()
+      setPhase('recording')
+    } catch (err) {
+      console.error("Erreur d'accès au microphone :", err)
+      setErrorMessage("Impossible d'accéder au microphone. Vérifiez vos permissions.")
+      setPhase('error')
+    }
+  }
+
+  // Mettre en pause l'enregistrement
+  const pauseRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.pause()
+      setPhase('paused')
+    }
+  }
+
+  // Reprendre l'enregistrement
+  const resumeRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+      mediaRecorderRef.current.resume()
+      setPhase('recording')
+    }
+  }
+
+  // Arrêter et envoyer l'audio au Webhook n8n
+  const stopAndTranscribe = () => {
+    if (!mediaRecorderRef.current) return
+
+    setPhase('processing')
+
+    mediaRecorderRef.current.onstop = async () => {
+      // 1. Création du fichier Blob Audio
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' })
+      const audioFile = new File([audioBlob], `recording-${Date.now()}.webm`, { type: 'audio/webm' })
+
+      // 2. Préparation du FormData
+      const formData = new FormData()
+      formData.append('file', audioFile)
+      formData.append('title', title)
+      formData.append('participants', '1') // Valeur par défaut ou dynamique selon tes besoins
+
+      // 3. Envoi vers le Webhook n8n
+      try {
+        const response = await fetch(N8N_WEBHOOK_URL, {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP : ${response.status}`)
+        }
+
+        // On arrête toutes les pistes du micro pour libérer le matériel
+        mediaRecorderRef.current?.stream.getTracks().forEach((track) => track.stop())
+
+        setPhase('done')
+      } catch (error) {
+        console.error("Erreur lors de l'envoi vers n8n :", error)
+        setErrorMessage("L'envoi vers n8n a échoué. Vérifiez l'URL du Webhook ou le serveur.")
+        setPhase('error')
+      }
+    }
+
+    mediaRecorderRef.current.stop()
+  }
 
   const isRecording = phase === 'recording'
 
@@ -85,27 +157,28 @@ export function DictaphoneRecorder({ title, onBack }: { title: string; onBack: (
               {phase === 'idle' && 'Ready to record from your microphone'}
               {phase === 'recording' && 'Capturing audio — long sessions are handled automatically'}
               {phase === 'paused' && 'Paused'}
-              {phase === 'processing' && 'Uploading and transcribing…'}
-              {phase === 'done' && 'Transcription complete'}
+              {phase === 'processing' && 'Sending audio to n8n webhook & transcribing…'}
+              {phase === 'done' && 'Transcription dispatched successfully!'}
+              {phase === 'error' && errorMessage}
             </p>
           </div>
 
           {/* Controls */}
           {phase !== 'processing' && phase !== 'done' && (
             <div className="flex items-center justify-center gap-3">
-              {phase === 'idle' && (
-                <Button size="lg" className="gap-2" onClick={() => setPhase('recording')}>
+              {(phase === 'idle' || phase === 'error') && (
+                <Button size="lg" className="gap-2" onClick={startRecording}>
                   <Mic className="h-4 w-4" />
                   Start recording
                 </Button>
               )}
               {phase === 'recording' && (
                 <>
-                  <Button size="lg" variant="outline" className="gap-2" onClick={() => setPhase('paused')}>
+                  <Button size="lg" variant="outline" className="gap-2" onClick={pauseRecording}>
                     <Pause className="h-4 w-4" />
                     Pause
                   </Button>
-                  <Button size="lg" variant="destructive" className="gap-2" onClick={() => setPhase('processing')}>
+                  <Button size="lg" variant="destructive" className="gap-2" onClick={stopAndTranscribe}>
                     <Square className="h-4 w-4" />
                     Stop & transcribe
                   </Button>
@@ -113,11 +186,11 @@ export function DictaphoneRecorder({ title, onBack }: { title: string; onBack: (
               )}
               {phase === 'paused' && (
                 <>
-                  <Button size="lg" className="gap-2" onClick={() => setPhase('recording')}>
+                  <Button size="lg" className="gap-2" onClick={resumeRecording}>
                     <Play className="h-4 w-4" />
                     Resume
                   </Button>
-                  <Button size="lg" variant="destructive" className="gap-2" onClick={() => setPhase('processing')}>
+                  <Button size="lg" variant="destructive" className="gap-2" onClick={stopAndTranscribe}>
                     <Square className="h-4 w-4" />
                     Stop & transcribe
                   </Button>
@@ -126,50 +199,36 @@ export function DictaphoneRecorder({ title, onBack }: { title: string; onBack: (
             </div>
           )}
 
+          {/* Processing State */}
           {phase === 'processing' && (
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Running speech-to-text and speaker diarization…
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-brand" />
+              Sending recording to n8n workflow...
             </div>
           )}
 
-          {/* Mock transcript */}
+          {/* Success State */}
           {phase === 'done' && (
             <div className="space-y-4">
-              <div className="space-y-3 rounded-xl border border-border p-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Transcript preview (sample)
-                </p>
-                {mockTranscript.slice(0, revealed).map((line, i) => (
-                  <div key={i} className="flex gap-3">
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-secondary-foreground">
-                      {line.speaker.split(' ')[1]}
-                    </span>
-                    <p className="text-sm leading-relaxed">
-                      <span className="font-medium">{line.speaker}: </span>
-                      <span className="text-muted-foreground">{line.text}</span>
-                    </p>
-                  </div>
-                ))}
-                {revealed < mockTranscript.length && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Attributing speakers…
-                  </div>
-                )}
+              <div className="flex items-center gap-2 rounded-lg bg-chart-2/10 p-4 text-sm text-chart-2">
+                <CheckCircle2 className="h-5 w-5 shrink-0" />
+                <span>Audio sent to n8n! Check your workflow to view the generated transcription and report.</span>
               </div>
 
-              <div className="flex items-center gap-2 rounded-lg bg-chart-2/10 p-3 text-sm text-chart-2">
-                <CheckCircle2 className="h-4 w-4" />
-                Report generated with decisions, themes, and actions.
-              </div>
-
-              <Button asChild size="lg" className="w-full gap-2">
-                <Link href="/meetings/mtg-003">
-                  View meeting report
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
+              <Link href="/meetings" className="w-full">
+              <Button size="lg" className="w-full gap-2">
+                View meetings list
+                <ArrowRight className="h-4 w-4" />
               </Button>
+              </Link>
+            </div>
+          )}
+
+          {/* Error Display */}
+          {phase === 'error' && errorMessage && (
+            <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{errorMessage}</span>
             </div>
           )}
         </CardContent>

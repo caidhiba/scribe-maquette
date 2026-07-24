@@ -21,13 +21,14 @@ export function MarketingHeader() {
           </a>
         </nav>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" asChild className="hidden sm:inline-flex">
-            <Link href="/dashboard">Sign in</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/dashboard">Open app</Link>
-          </Button>
-        </div>
+        <Link href="/dashboard" className="hidden sm:inline-flex">
+          <Button variant="ghost">Sign in</Button>
+        </Link>
+        <Link href="/dashboard">
+          <Button>Open app</Button>
+        </Link>
+          </div>
+       
       </div>
     </header>
   )

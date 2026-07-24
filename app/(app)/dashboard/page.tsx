@@ -15,17 +15,16 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Dashboard"
-        description="Your meeting intelligence at a glance."
-        action={
-          <Button asChild>
-            <Link href="/capture">
+          title="Dashboard"
+          description="Your meeting intelligence at a glance."
+        >
+          <Link href="/capture">
+            <Button className="gap-2">
               <Plus className="h-4 w-4" />
               New capture
-            </Link>
-          </Button>
-        }
-      />
+            </Button>
+          </Link>
+      </PageHeader>
 
       <StatTiles meetings={meetings} />
 
@@ -39,12 +38,12 @@ export default function DashboardPage() {
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-foreground">Recent meetings</h2>
-          <Button asChild variant="ghost" size="sm">
-            <Link href="/history">
+          <Link href="/history">
+            <Button variant="ghost" size="sm" className="gap-1">
               View all
               <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
+            </Button>
+          </Link>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {recent.map((m) => (
