@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+/* @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
@@ -54,7 +54,7 @@
   color-scheme: light;
   --radius: 0.75rem;
 
-  /* Neutrals: warm off-white canvas, white cards, near-black ink */
+  /* Neutrals: warm off-white canvas, white cards, near-black ink 
   --background: oklch(0.97 0.004 90);
   --foreground: oklch(0.21 0.01 60);
   --card: oklch(1 0 0);
@@ -62,7 +62,7 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0.01 60);
 
-  /* Primary: near-black ink */
+  /* Primary: near-black ink 
   --primary: oklch(0.24 0.01 60);
   --primary-foreground: oklch(0.98 0.004 90);
 
@@ -73,11 +73,11 @@
   --accent: oklch(0.94 0.006 90);
   --accent-foreground: oklch(0.24 0.01 60);
 
-  /* Brand accent: confident blue */
+  /* Brand accent: confident blue 
   --brand: oklch(0.55 0.15 250);
   --brand-foreground: oklch(0.98 0.004 90);
 
-  /* Recording / danger: red */
+  /* Recording / danger: red 
   --destructive: oklch(0.58 0.22 27);
 
   --border: oklch(0.9 0.005 90);
@@ -144,4 +144,60 @@
   body {
     @apply bg-background text-foreground;
   }
+} */
+
+
+
+
+
+
+
+
+@import "tailwindcss";
+
+@theme {
+  --color-background: oklch(0.98 0.02 320);
+  --color-foreground: oklch(0.20 0.05 260);
+
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.20 0.05 260);
+
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.20 0.05 260);
+
+  /* Violet principal */
+  --color-primary: oklch(0.62 0.22 280);
+  --color-primary-foreground: oklch(1 0 0);
+
+  /* Bleu secondaire */
+  --color-secondary: oklch(0.95 0.04 230);
+  --color-secondary-foreground: oklch(0.40 0.15 240);
+
+  /* Éléments atténués / Muted */
+  --color-muted: oklch(0.96 0.02 310);
+  --color-muted-foreground: oklch(0.50 0.05 270);
+
+  /* Accent Rose Magenta */
+  --color-accent: oklch(0.93 0.06 330);
+  --color-accent-foreground: oklch(0.45 0.18 330);
+
+  --color-destructive: oklch(0.60 0.20 20);
+  --color-destructive-foreground: oklch(0.98 0 0);
+
+  /* Bordures et anneaux */
+  --color-border: oklch(0.92 0.03 280);
+  --color-input: oklch(0.92 0.03 280);
+  --color-ring: oklch(0.62 0.22 280);
+
+  --color-brand: oklch(0.62 0.22 280);
+
+  --radius-lg: 0.75rem;
+  --radius-md: calc(0.75rem - 2px);
+  --radius-sm: calc(0.75rem - 4px);
+}
+
+/* Application des styles globaux */
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
 }
