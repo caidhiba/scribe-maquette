@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
   Video,
@@ -137,12 +138,16 @@ export function VisioWireframe({ title, onBack }: { title: string; onBack: () =>
         </ol>
       </div>
 
-      <Button asChild size="lg" className="mt-6 w-full gap-2">
-        <Link href="/meetings/mtg-001">
-          View sample video report
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      </Button>
+      <Link
+        href="/meetings/mtg-001"
+        className={cn(
+          buttonVariants({ size: 'lg' }),
+          'mt-6 flex w-full items-center justify-center gap-2'
+        )}
+      >
+        View sample video report
+        <ArrowRight className="h-4 w-4" />
+      </Link>
     </div>
   )
 }

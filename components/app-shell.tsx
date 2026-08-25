@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { LayoutDashboard, Mic, History, Menu, X, Plus, Settings, ShieldCheck } from 'lucide-react'
 import { ScribeLogo } from '@/components/scribe-logo'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 
@@ -52,12 +52,17 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </Link>
       </div>
 
-      <Button asChild className="justify-start gap-2">
-        <Link href="/capture" onClick={onNavigate}>
-          <Plus className="h-4 w-4" />
-          New meeting
-        </Link>
-      </Button>
+      <Link
+  href="/capture"
+  onClick={onNavigate}
+  className={cn(
+    buttonVariants({ variant: 'default' }),
+    'justify-start gap-2'
+  )}
+>
+  <Plus className="h-4 w-4" />
+  New meeting
+</Link>
 
       <NavLinks onNavigate={onNavigate} />
 

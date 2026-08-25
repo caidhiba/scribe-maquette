@@ -5,3 +5,5 @@ scribe-backend/.env
 scribe-backend/.venv
 scribe-backend/env/
 scribe-backend/
+node_modules/
+.next/
